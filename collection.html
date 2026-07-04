@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saved Notes</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <header>
+    <h1>Saved Notes</h1>
+    <a href="./index.html" class="nav-btn">⬅ Add New</a>
+  </header>
+
+  <div id="notes-container">
+    <p style="color: #888;">Loading notes from IndexedDB...</p>
+  </div>
+
+  <script src="./js/db.js"></script>
+  <script>
+    async function loadNotes() {
+      const container = document.getElementById('notes-container');
+      const notes = await getAllNotes();
+
+      if (notes.length === 0) {
+        container.innerHTML = '<p style="color: #aaa;">No saved notes found.</p>';
+        return;
+      }
+
+      container.innerHTML = ''; // Clear loading text
+
+      // Render notes in reverse order (newest first)
+      notes.reverse().forEach(note => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        let html = `
+          <h3>${note.title}</h3>
+          <div class="timestamp">${note.timestamp}</div>
+          <p>${note.content}</p>
+        `;
+
+        // If an image blob exists, convert to temporary browser URL
+        if (note.imageBlob) {
+          const imgUrl = URL.createObjectURL(note.imageBlob);
+          html += `<img src="${imgUrl}" alt="Note attachment">`;
+        }
+
+        // If an audio blob exists, convert to playable audio player
+        if (note.audioBlob) {
+          const audioUrl = URL.createObjectURL(note.audioBlob);
+          html += `<audio controls src="${audioUrl}"></audio>`;
+        }
+
+        html += `<br><button class="btn-delete" onclick="removeNote(${note.id})">Delete Note</button>`;
+
+        card.innerHTML = html;
+        container.appendChild(card);
+      });
+    }
+
+    async function removeNote(id) {
+      if (confirm('Delete this note?')) {
+        await deleteNote(id);
+        loadNotes(); // Reload UI
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadNotes);
+  </script>
+</body>
+</html>
